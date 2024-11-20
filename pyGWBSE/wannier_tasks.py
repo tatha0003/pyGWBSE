@@ -60,7 +60,7 @@ class WriteWannierInputForGW(FiretaskBase):
                            prev_incar=prev_incar, encutgw=encutgw, nomegagw=nomegagw, nbands=nbands, nbandsgw=nbandsgw)
         vis.write_input(".")
         labels, kpts = kpath_finder(poscarfile)
-        write_wannier_input(numwan, nbands, labels, kpts, wann_inp, elements,False)
+        write_wannier_input(numwan, nbands, labels, kpts, wann_inp, elements, False)
 
 
 @explicit_serialize
@@ -86,19 +86,19 @@ class WriteWannierInputForDFT(FiretaskBase):
         potcarfile = str(os.getcwd()) + '/POTCAR'
         vasprun = Vasprun(vasprunfile)
         incar = vasprun.incar
+        mesh = vasprun.kpoints.kpts[0]
         nbands = incar["NBANDS"]
         elements = read_potcar(potcarfile, poscarfile)
         numwan = 0
         for element in elements:
             numwan = numwan + element[5]
-        print(numwan, nbands)
         if numwan > nbands:
             nbands = (int(numwan / ppn) + 1) * ppn
-        vis = CreateInputs(structure, mode='STATIC', prev_incar=prev_incar, reciprocal_density=reciprocal_density,
-                           nbands=nbands)
+        vis = CreateInputs(structure, mode='WANNIER', prev_incar=prev_incar, reciprocal_density=reciprocal_density,
+                           kpar=1, nbands=nbands)
         vis.write_input(".")
         labels, kpts = kpath_finder(poscarfile)
-        write_wannier_input(numwan, nbands, labels, kpts, wann_inp, elements,write_hr)
+        write_wannier_input(numwan, nbands, labels, kpts, wann_inp, elements, write_hr)
 
 
 @explicit_serialize
@@ -113,7 +113,7 @@ class CopyKptsWan2vasp(FiretaskBase):
         """
         f_wannkpt = str(os.getcwd()) + '/wannier90_band.kpt'
         f_vaspkpt = str(os.getcwd()) + '/KPOINTS'
-        f = open(f_wannkpt)
+        f = open(f_wannkpt, "r")
         contents = f.readlines()
         f.close()
         lines = str.split(contents[0])
@@ -127,7 +127,7 @@ class CopyKptsWan2vasp(FiretaskBase):
         f.close()
 
 
-def write_wannier_input(numwan, nbands, labels, kpts, wann_inp, elements,write_hr):
+def write_wannier_input(numwan, nbands, labels, kpts, wann_inp, elements, write_hr):
     """
     Your Comments Here
     """
@@ -136,12 +136,19 @@ def write_wannier_input(numwan, nbands, labels, kpts, wann_inp, elements,write_h
         f.write("write_hr = true" + "\n")
         f.close()
     else:
-        f = open(wann_inp, 'w')
+        f = open(wann_inp, "r")
+        contents = f.readlines()
+        f.close()
+        f = open(wann_inp, "w")
+        for content in contents[5:]:
+            f.write(content)
+        f.close()
+        f = open(wann_inp, 'a')
         f.write("num_wann = " + str(numwan) + "\n")
-        if numwan < nbands:
-            f.write("exclude_bands " + str(numwan + 1) + "-" + str(nbands) + "\n")
+        if numwan < nbands-1:
+            f.write("exclude_bands: " + str(numwan + 1) + "-" + str(nbands) + "\n")
         if numwan == nbands - 1:
-            f.write("exclude_bands " + str(numwan + 1) + "\n")
+            f.write("exclude_bands: " + str(numwan + 1) + "\n")
         f.write("bands_plot = true" + "\n")
         f.write("begin kpoint_path" + "\n")
         for i in range(len(labels)):
@@ -156,16 +163,33 @@ def write_wannier_input(numwan, nbands, labels, kpts, wann_inp, elements,write_h
         f.write("Begin Projections" + "\n")
         f.write("random" + "\n")
         for element in elements:
-            f.write(element[0] + ':')
+            el_string=[]
+            el_string.append(element[0])
             for l in range(4):
                 if element[l + 1] > 0:
-                    if l == 0:
-                        f.write('l=' + str(l))
-                    else:
-                        f.write(';' + 'l=' + str(l))
-            f.write('\n')
+                    el_string.append("l="+str(l))
+            f_string=";".join(el_string)
+            w_string=f_string.replace(";",":",1)
+            f.write(w_string+"\n")
         f.write("End Projections" + "\n")
         f.write("num_iter = 500" + "\n")
+        #f.write("begin unit_cell_cart" + "\n")
+        #for i in range(3):
+        #    f.write("%14.7f" %lattice[i][0]+" "+"%14.7f" %lattice[i][1]+" "+"%14.7f" %lattice[i][2]+ "\n")
+        #f.write("end unit_cell_cart" + "\n")
+        #f.write("begin atoms_cart" + "\n")
+        #for site in sites:
+        #    coord=site.coords
+        #    f.write(str(site.specie)+" "+"%14.7f" %coord[0]+" "+"%14.7f" %coord[1]+" "+"%14.7f" %coord[2]+ "\n")
+        #f.write("end atoms_cart" + "\n")
+        #f.write("mp_grid ="+" "+str(mesh[0])+" "+str(mesh[1])+" "+str(mesh[2])+"\n")
+        #f.write("begin kpoints" + "\n")
+        #for i in range(0, mesh[0]):
+        #    for j in range(0, mesh[1]):
+        #        for k in range(0, mesh[2]):
+        #            f.write('%12.8f' %( i*1./mesh[0])+" "+'%12.8f' %( j*1./mesh[1])+" "+'%12.8f' %( k*1./mesh[2])+ '\n')
+        #f.write("end kpoints" + "\n")
+        f.write("write_hr = true" + "\n")
         f.close()
 
 

@@ -10,7 +10,9 @@ INCAR:
   NELM: 100
   PREC: Accurate
   SIGMA: 0.01
-  LEPSILON: true 
+  LEPSILON: false
+  LWANNIER90: true
+  LWRITE_MMN_AMN: false 
   LVHAR: false
   LOPTICS: true 
   LPEAD: false

@@ -94,8 +94,6 @@ class bse2db(FiretaskBase):
             job_tag = self["job_tag"]
         else:
             job_tag = None
-        with open(filename, "a") as file:
-            file.write("</modeling>")
         vasprun = Vasprun(filename)
         incar = vasprun.incar
         parameters = vasprun.parameters

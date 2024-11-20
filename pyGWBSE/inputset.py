@@ -6,21 +6,21 @@ import os
 
 from monty.serialization import loadfn
 from pymatgen.io.vasp.inputs import Incar, Kpoints
-from pymatgen.io.vasp.sets import DictSet
+from pymatgen.io.vasp.sets import VaspInputSet
 from pymatgen.symmetry.bandstructure import HighSymmKpath
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-class CreateInputs(DictSet):
+class CreateInputs(VaspInputSet):
     """
     Your Comments Here
     """
     CONFIG = loadfn(os.path.join(MODULE_DIR, "inputset.yaml"))
 
-    SUPPORTED_MODES = ("DIAG", "GW", "STATIC", "BSE", "CONV", "EMC")
+    SUPPORTED_MODES = ("DIAG", "GW", "STATIC", "BSE", "CONV", "EMC", "WANNIER")
 
     def __init__(self, structure, prev_incar=None, nbands=None, nomegagw=None, encutgw=None,
-                 potcar_functional="PBE_54", reciprocal_density=100, kpoints_line_density = 100, kpar=None, nbandsgw=None,
+                 user_potcar_functional="PBE_54", reciprocal_density=100, kpoints_line_density = 100, kpar=None, nbandsgw=None,
                  mode="STATIC", copy_wavecar=True, nbands_factor=5, ncores=16,nbandso=None, nbandsv=None, wannier_fw=None,
                  **kwargs):
         super().__init__(structure, CreateInputs.CONFIG, **kwargs)
@@ -28,7 +28,7 @@ class CreateInputs(DictSet):
         self.nbands = nbands
         self.encutgw = encutgw
         self.nomegagw = nomegagw
-        self.potcar_functional = potcar_functional
+        self.user_potcar_functional = user_potcar_functional
         self.reciprocal_density = reciprocal_density
         self.kpoints_line_density = kpoints_line_density
         self.mode = mode.upper()
@@ -80,10 +80,16 @@ class CreateInputs(DictSet):
         parent_incar = super().incar
         incar = Incar(self.prev_incar) if self.prev_incar is not None else \
             Incar(parent_incar)
-        if self.wannier_fw == True:
+        if self.mode == "WANNIER":
             incar.update({
-                "LWANNIER90": True
+                "LWRITE_MMN_AMN": True
             })
+        #if self.mode == "STATIC":
+        #    incar.update({
+        #        "LHFCALC": True,
+        #        "GGA": "PE",
+        #        "HFSCREEN": 0.2,
+        #    })
         if self.mode == "EMC":
             incar.update({
                 "IBRION": -1,
@@ -120,7 +126,7 @@ class CreateInputs(DictSet):
             })
             if self.wannier_fw == True:
                 incar.update({
-                    "LWANNIER90": True
+                    "LWRITE_MMN_AMN": True
                 })
             incar.pop("EDIFF", None)
             incar.pop("LOPTICS", None)

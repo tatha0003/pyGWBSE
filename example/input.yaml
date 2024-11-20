@@ -1,11 +1,11 @@
 PARAMS:
-  kpar: 4                   
+  kpar: 2                   
   # 'KPAR' tag to be used in VASP simulations
   
-  ppn: 13                   
+  ppn: 12                   
   # NPROCS/KPAR ; NPROCS: number of total processors to be used in VASP simulations  
   
-  reciprocal_density: 50    
+  reciprocal_density: 50     
   # reciprocal density that determines the k-grid using 'automatic_density_by_vol' method of pymatgen
   
   encutgw: 100              
@@ -14,7 +14,7 @@ PARAMS:
   nbgwfactor: 2             
   # NBANDS=nbgwfactor x nocc'; nocc' is the smallest multiple of ppn which is larger than number of occupied bands
   
-  nomegagw: 50              
+  nomegagw: 50             
   # NOMEGAGW to be used in VASP simulations
   
   convsteps: [50, 0, 0]             
@@ -33,7 +33,7 @@ STRUCTURE:
   source: MID               
   # MID/POSCAR MID:get structure from MP database, POSCAR: structure from a file
   
-  mat_name: NEW_MAT         
+  mat_name: MoS2         
   # unique identifier in the database when source=POSCAR
   
   material_id: mp-149       
@@ -46,16 +46,16 @@ WFLOW_DESIGN:
   skip_emc: true            
   # set true to skip effective mass calculation                
   
-  skip_wannier: true        
+  skip_wannier: false       
   # set true to skip wannier bandstructure interpolation
   
-  skip_conv: false         
+  skip_conv: true      
   # set true to skip convergence test
   
   skip_gw: true             
   # set true to skip GW calculation
   
-  scgw: true                
+  scgw: false            
   # set true to perform self-consistent GW instead of G0W0
   
   skip_bse: true             

@@ -56,7 +56,7 @@ class convFW(Firework):
         convsteps=np.array(convsteps)*0.01
         for niter in range(conviter):
             niter = niter + 1
-            files2copy = ['WAVECAR']
+            files2copy = ['WAVECAR', "wannier90.win"]
             task_label = 'Convergence_Iteration: ' + str(niter)
 
             hviter=np.heaviside((niter-1),0) 
@@ -119,7 +119,7 @@ class GwFW(Firework):
         t = []
         name = "GW"
         fw_name = "{}-{}".format(mat_name, name)
-        files2copy = ['WAVECAR', 'WAVEDER']
+        files2copy = ['WAVECAR', 'WAVEDER', "wannier90.win"]
         if prev_calc_dir:
             t.append(CopyOutputFiles(additional_files=files2copy, calc_dir=prev_calc_dir, contcar_to_poscar=True))
         elif parents:
@@ -212,12 +212,11 @@ class WannierCheckFW(Firework):
         t = []
         name = "WANNIER_CHECK"
         fw_name = "{}-{}".format(mat_name, name)
-        t.append(CopyOutputFiles(calc_loc=prev_calc_loc, contcar_to_poscar=True))
+        t.append(CopyOutputFiles(calc_loc=prev_calc_loc, contcar_to_poscar=True, additional_files=['WAVECAR', "wannier90.win"]))
         t.append(WriteWannierInputForDFT(structure=structure, reciprocal_density=reciprocal_density, ppn=ppn, write_hr=False))
         t.append(Run_Vasp(vasp_cmd=vasp_cmd))
-        t.append(WriteWannierInputForDFT(structure=structure, reciprocal_density=reciprocal_density, ppn=ppn, write_hr=True))
         t.append(Run_Wannier(wannier_cmd=wannier_cmd))
-        vasp_input_set = CreateInputs(structure, mode='EMC', kpar=kpar, reciprocal_density=reciprocal_density)
+        vasp_input_set = CreateInputs(structure, mode='EMC', kpar=1, reciprocal_density=reciprocal_density)
         t.append(WriteVaspFromIOSet(structure=structure,
                                     vasp_input_set=vasp_input_set,
                                     vasp_input_params=vasp_input_params))
@@ -227,7 +226,7 @@ class WannierCheckFW(Firework):
                             db_file=db_file, compare_vasp=True, defuse_unsuccessful=False))
         tracker = Tracker('vasp.log', nlines=100)
 
-        super(WannierCheckFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker]}, **kwargs)
+        super(WannierCheckFW, self).__init__(t, parents=parents, name=fw_name, state='PAUSED', spec={"_trackers": [tracker]}, **kwargs)
 
 
 class WannierFW(Firework):

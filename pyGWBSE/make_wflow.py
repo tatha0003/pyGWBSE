@@ -116,13 +116,14 @@ def create_wfs(struct, params_dict, vasp_cmd=None, sumo_cmd=None, wannier_cmd=No
         fw = WannierCheckFW(structure=struct, mat_name=mat_name, kpar=kpar, ppn=ppn,vasp_cmd=vasp_cmd,wannier_cmd=wannier_cmd,db_file=db_file,parents=parents,reciprocal_density=rd)
         fws.append(fw)
 
-    ifw=ifw+1
-    parents = fws[0]
-    fw = convFW(structure=struct, mat_name=mat_name, nbands=nbands, nbgwfactor=nbgwfactor, encutgw=encutgw, nomegagw=nomegagw, convsteps=convsteps, conviter=conviter, 
-                    tolerence=0.1, no_conv=skip_conv, vasp_cmd=vasp_cmd,db_file=db_file,parents=parents,kpar=kpar,nbandsgw=nbandsgw,reciprocal_density=rd)
-    fws.append(fw)
 
     if skip_gw==False:
+        ifw=ifw+1
+        parents = fws[0]
+        fw = convFW(structure=struct, mat_name=mat_name, nbands=nbands, nbgwfactor=nbgwfactor, encutgw=encutgw, nomegagw=nomegagw, convsteps=convsteps, conviter=conviter, 
+                    tolerence=0.1, no_conv=skip_conv, vasp_cmd=vasp_cmd,db_file=db_file,parents=parents,kpar=kpar,nbandsgw=nbandsgw,reciprocal_density=rd)
+        fws.append(fw)
+
         ifw=ifw+1
         parents = fws[ifw-1]
         fw = GwFW(structure=struct, mat_name=mat_name, tolerence=0.1, no_conv=not(scgw),
