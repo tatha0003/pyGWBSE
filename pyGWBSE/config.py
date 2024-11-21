@@ -5,5 +5,7 @@ __author__ = 'Tathagata Biswas <tbiswas3@asu.edu>'
 VASP_CMD = ">>vasp_cmd<<"
 SUMO_CMD = ">>sumo_cmd<<"
 WANNIER_CMD = ">>wannier_cmd<<"
+PREWTB_CMD = ">>prewtb_cmd<<"
+WTB_CMD = ">>wtb_cmd<<"
 DB_FILE = ">>db_file<<"
 

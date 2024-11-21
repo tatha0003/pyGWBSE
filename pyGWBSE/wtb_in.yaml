@@ -1,0 +1,25 @@
+NTHREADS: 16
+SYSDIM: "3D"
+DFT: "V"
+
+OUTPUT: "./out-exc-bs/"
+CALC_DATA: "./out-exc-bs/"
+PARAMS_FILE: "./tb_hr.dat"
+
+MESH_TYPE: "RK3D"
+RK: 25
+
+COULOMB_POT: V3D
+NBANDSC: 4
+NBANDSV: 4
+
+BSE: T
+SPEC: T
+DTDIAG: T
+
+EDIEL: 1
+
+CSHIFT: 0.1
+ENSPECI: 0.0
+ENSPECF: 6.0
+

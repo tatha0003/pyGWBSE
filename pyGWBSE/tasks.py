@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 __author__ = 'Anubhav Jain, Kiran Mathew'
 __email__ = 'ajain@lbl.gov, kmathew@lbl.gov'
 
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @explicit_serialize
 class CheckBeConv(FiretaskBase):
@@ -429,3 +430,44 @@ class CopyOutputFiles(CopyFiles):
                     f_out.writelines(file_content)
                 f.close()
                 os.remove(dest_path + gz_ext)
+
+
+@explicit_serialize
+class WriteWTBInput(FiretaskBase):
+    """
+    Your Comments Here
+    """
+    CONFIG = loadfn(os.path.join(MODULE_DIR, "wtb_in.yaml"))
+    required_params = ["enwinbse"]
+    optional_params = ["RK", "EDIEL, CSHIFT", "NTHREADS"]
+
+    def run_task(self, fw_spec):
+
+        file = glob.glob('vasprun.xml*')[-1]
+        vasprun = Vasprun(file)
+        enwinbse = self["enwinbse"]
+
+        qp_energies = vasprun.eigenvalues
+        igap, dgap = get_gap_from_dict(qp_energies)
+        bgap, cbm, vbm, is_band_gap_direct = vasprun.eigenvalue_band_properties
+        nv, nc = get_nbandsov(qp_energies, vbm, cbm, enwinbse)
+        self.CONFIG["NBANDSC"]=nc
+        self.CONFIG["NBANDSV"]=nv
+        self.CONFIG["ENSPECI"]=round((dgap-1.0),4)
+        self.CONFIG["ENSPECF"]=round((dgap+enwinbse),4)
+        self.write_wtbinput()
+
+    def write_wtbinput(self):
+        wann_inp = str(os.getcwd()) + '/input.dat'
+        newpath = str(os.getcwd()) + str(self.CONFIG["OUTPUT"][1:])
+        if not os.path.isdir(newpath):
+            os.makedirs(newpath)
+        f=open(wann_inp, "w")
+        for tag in self.CONFIG.keys():
+            if tag in ["OUTPUT", "CALC_DATA", "PARAMS_FILE"]:
+                f.writelines([tag, "= ", '"', str(self.CONFIG[tag]), '"',"\n"])
+            else:
+                f.writelines([tag, "= ", str(self.CONFIG[tag]), "\n"])
+        f.close()
+
+

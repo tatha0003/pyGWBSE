@@ -76,3 +76,36 @@ class Run_Wannier(FiretaskBase):
         logger.info("Running command: {}".format(cmd))
         return_code = subprocess.call(cmd, shell=True)
         logger.info("Command {} finished running with returncode: {}".format(cmd, return_code))
+
+@explicit_serialize
+class Run_PreWTB(FiretaskBase):
+    """
+    Your Comments Here
+    """
+    required_params = ["prewtb_cmd"]
+
+    def run_task(self, fw_spec):
+        """
+        Your Comments Here
+        """
+        cmd = env_chk(self["prewtb_cmd"], fw_spec)
+        logger.info("Running command: {}".format(cmd))
+        return_code = subprocess.call(cmd, shell=True)
+        logger.info("Command {} finished running with returncode: {}".format(cmd, return_code))
+
+@explicit_serialize
+class Run_WTB(FiretaskBase):
+    """
+    Your Comments Here
+    """
+    required_params = ["wtb_cmd"]
+
+    def run_task(self, fw_spec):
+        """
+        Your Comments Here
+        """
+        cmd = env_chk(self["wtb_cmd"], fw_spec)
+        logger.info("Running command: {}".format(cmd))
+        return_code = subprocess.call(cmd, shell=True)
+        logger.info("Command {} finished running with returncode: {}".format(cmd, return_code))
+

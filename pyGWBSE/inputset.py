@@ -85,11 +85,11 @@ class CreateInputs(VaspInputSet):
                 "LWRITE_MMN_AMN": True
             })
         #if self.mode == "STATIC":
-        #    incar.update({
-        #        "LHFCALC": True,
-        #        "GGA": "PE",
-        #        "HFSCREEN": 0.2,
-        #    })
+            #incar.update({
+            #    "LHFCALC": True,
+            #    "GGA": "PE",
+            #    "HFSCREEN": 0.2,
+            #})
         if self.mode == "EMC":
             incar.update({
                 "IBRION": -1,

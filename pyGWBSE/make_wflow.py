@@ -1,11 +1,11 @@
 #This code is to create the workflow based on inputs from input.yaml file 
 
 from fireworks import Firework, Workflow
-from pyGWBSE.wflows import ScfFW, convFW, BseFW, GwFW, EmcFW, WannierCheckFW, WannierFW
+from pyGWBSE.wflows import ScfFW, convFW, BseFW, GwFW, EmcFW, WannierCheckFW, WannierFW, WtbFW
 from pyGWBSE.inputset import CreateInputs 
 from pymatgen.core import Structure
 from fireworks import LaunchPad
-from pyGWBSE.config import VASP_CMD, DB_FILE, SUMO_CMD, WANNIER_CMD
+from pyGWBSE.config import VASP_CMD, DB_FILE, SUMO_CMD, PREWTB_CMD, WTB_CMD, WANNIER_CMD
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.io.vasp.inputs import Kpoints
 from pymatgen.ext.matproj import MPRester
@@ -57,6 +57,8 @@ def create_wfs(struct, params_dict, vasp_cmd=None, sumo_cmd=None, wannier_cmd=No
     c = c or {}
     vasp_cmd = c.get("VASP_CMD", VASP_CMD)                                      
     sumo_cmd = c.get("SUMO_CMD", SUMO_CMD)                                      
+    prewtb_cmd = c.get("PREWTB_CMD", PREWTB_CMD)                                      
+    wtb_cmd = c.get("WTB_CMD", WTB_CMD)                                      
     wannier_cmd = c.get("WANNIER_CMD", WANNIER_CMD)                                      
     db_file = c.get("DB_FILE", DB_FILE)    
 
@@ -111,9 +113,11 @@ def create_wfs(struct, params_dict, vasp_cmd=None, sumo_cmd=None, wannier_cmd=No
         fws.append(fw)
 
     if skip_wannier==False:
-        ifw=ifw+1 
+        ifw=ifw+2 
         parents = fws[0]
-        fw = WannierCheckFW(structure=struct, mat_name=mat_name, kpar=kpar, ppn=ppn,vasp_cmd=vasp_cmd,wannier_cmd=wannier_cmd,db_file=db_file,parents=parents,reciprocal_density=rd)
+        fw = WannierCheckFW(structure=struct, mat_name=mat_name, kpar=kpar, ppn=ppn,vasp_cmd=vasp_cmd,wannier_cmd=wannier_cmd, prewtb_cmd=prewtb_cmd,db_file=db_file,parents=parents,reciprocal_density=rd)
+        fws.append(fw)
+        fw = WtbFW(structure=struct,mat_name=mat_name, wtb_cmd=wtb_cmd,db_file=db_file,parents=parents)
         fws.append(fw)
 
 

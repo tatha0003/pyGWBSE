@@ -15,7 +15,7 @@ from pyGWBSE.inputset import CreateInputs
 from pyGWBSE.out2db import gw2db, bse2db, emc2db, eps2db, Wannier2DB, rpa2db
 from pyGWBSE.run_calc import Run_Vasp, Run_Sumo, Run_Wannier
 from pyGWBSE.tasks import CopyOutputFiles, CheckBeConv, StopIfConverged, PasscalClocsCond, WriteBSEInput, \
-                            WriteGWInput, MakeWFilesList, SaveNbandsov, SaveConvParams
+                            WriteGWInput, MakeWFilesList, SaveNbandsov, SaveConvParams, WriteWTBInput
 from pyGWBSE.wannier_tasks import WriteWannierInputForDFT, WriteWannierInputForGW, CopyKptsWan2vasp
 
 
@@ -204,7 +204,7 @@ class EmcFW(Firework):
 class WannierCheckFW(Firework):
     def __init__(self, ppn=None, kpar=None, mat_name=None, structure=None, reciprocal_density=None, vasp_input_set=None,
                  vasp_input_params=None,
-                 vasp_cmd="vasp", wannier_cmd=None, prev_calc_loc=True, prev_calc_dir=None, db_file=None,
+                 vasp_cmd="vasp", wannier_cmd=None, prewtb_cmd=None, prev_calc_loc=True, prev_calc_dir=None, db_file=None,
                  vasptodb_kwargs={}, parents=None, **kwargs):
         """
         Your Comments Here
@@ -222,6 +222,7 @@ class WannierCheckFW(Firework):
                                     vasp_input_params=vasp_input_params))
         t.append(CopyKptsWan2vasp())
         t.append(Run_Vasp(vasp_cmd=vasp_cmd))
+        t.append(Run_PreWTB(prewtb_cmd=prewtb_cmd))
         t.append(Wannier2DB(structure=structure, mat_name=mat_name, task_label='CHECK_WANNIER_INTERPOLATION',
                             db_file=db_file, compare_vasp=True, defuse_unsuccessful=False))
         tracker = Tracker('vasp.log', nlines=100)
@@ -246,3 +247,22 @@ class WannierFW(Firework):
         tracker = Tracker('wannier90.wout', nlines=100)
 
         super(WannierFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker]}, **kwargs)
+
+class WtbFW(Firework):
+    def __init__(self, structure=None, mat_name=None, wtb_cmd=None, prev_calc_loc=True, prev_calc_dir=None,
+                 db_file=None, parents=None, **kwargs):
+        """
+        Your Comments Here
+        """
+        t = []
+        name = "WTB"
+        fw_name = "{}-{}".format(mat_name, name)
+        files2copy = ['wannier90.win', 'tb_hr.dat']
+        t.append(CopyOutputFiles(additional_files=files2copy, calc_loc=prev_calc_loc))
+        t.append(WriteWTBInput(enwinbse=enwinbse))
+        t.append(Run_WTB(wtb_cmd=wtb_cmd))
+        #t.append(Wannier2DB(structure=structure, mat_name=mat_name, task_label='GW_BANDSTRUCTURE', db_file=db_file,
+        #                    compare_vasp=False, defuse_unsuccessful=False))
+        tracker = Tracker('wannier90.wout', nlines=100)
+
+        super(WtbFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker]}, **kwargs)
