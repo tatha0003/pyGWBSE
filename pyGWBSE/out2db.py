@@ -9,7 +9,7 @@ from fireworks import explicit_serialize, FiretaskBase, FWAction
 from monty.json import jsanitize
 from pymatgen.io.vasp.outputs import Vasprun, Outcar
 
-from pyGWBSE.tasks import read_emcpyout, read_epsilon, get_gap_from_dict, read_vac_level
+from pyGWBSE.tasks import read_emcpyout, read_wtbout, read_epsilon, get_gap_from_dict, read_vac_level
 from pyGWBSE.wannier_tasks import read_vbm, read_wannier, read_vasp, read_special_kpts
 
 
@@ -180,6 +180,37 @@ class emc2db(FiretaskBase):
             "formula_pretty": structure.composition.reduced_formula,
             "material_id": mat_name, "run_directory": dir_name,
             "hole_effective_mass": hmass, "electron_effective_mass": emass}
+        d = jsanitize(d)
+        coll = mmdb.db[task_collection]
+        coll.insert_one(d)
+
+@explicit_serialize
+class wtb2db(FiretaskBase):
+    """
+    Insert effective masses for a SUMO-BANDSTATS calculation.
+    """
+    required_params = ["structure", "db_file", "mat_name", "task_label"]
+    optional_params = ["defuse_unsuccessful"]
+
+    def run_task(self, fw_spec):
+        """
+        Your Comments Here
+        """
+        # get adddtional tags to parse the directory for
+        db_file = env_chk(self.get('db_file'), fw_spec)
+        dir_name = os.getcwd() + '/out-exc-bs'
+        mmdb = VaspCalcDb.from_db_file(db_file, admin=True)
+        structure = self["structure"]
+        mat_name = self["mat_name"]
+        task_label = self["task_label"]
+        task_collection = 'WTB_Results'
+        filename = glob.glob('./out-exc-bs/bse_diel_xx.dat*')[-1]
+        en, eps1, eps2 = read_wtbout(filename)
+        # dictionary to update the database with
+        d = {"structure": structure.as_dict(), "task_label": task_label,
+            "formula_pretty": structure.composition.reduced_formula,
+            "material_id": mat_name, "run_directory": dir_name,
+            "frequency": en, "epsilon_1": eps1, "epsilon_2": eps2}
         d = jsanitize(d)
         coll = mmdb.db[task_collection]
         coll.insert_one(d)

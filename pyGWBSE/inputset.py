@@ -84,12 +84,6 @@ class CreateInputs(VaspInputSet):
             incar.update({
                 "LWRITE_MMN_AMN": True
             })
-        #if self.mode == "STATIC":
-            #incar.update({
-            #    "LHFCALC": True,
-            #    "GGA": "PE",
-            #    "HFSCREEN": 0.2,
-            #})
         if self.mode == "EMC":
             incar.update({
                 "IBRION": -1,
@@ -100,7 +94,7 @@ class CreateInputs(VaspInputSet):
                 "LWAVE": False,
                 "NSW": 0,
                 "ISYM": 0,
-                "ICHARG": 11
+                "ICHARG": 11,
             })
             incar.pop("LWANNIER90", None)
             incar.pop("LEPSILON", None)

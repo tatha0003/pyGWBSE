@@ -8,12 +8,14 @@ sequences of VASP calculations.
 import numpy as np
 from atomate.common.firetasks.glue_tasks import PassCalcLocs
 from atomate.vasp.firetasks.write_inputs import WriteVaspFromIOSet
+from atomate.vasp.firetasks.parse_outputs import VaspToDb
 from fireworks import Firework, Tracker
 
 
 from pyGWBSE.inputset import CreateInputs
-from pyGWBSE.out2db import gw2db, bse2db, emc2db, eps2db, Wannier2DB, rpa2db
-from pyGWBSE.run_calc import Run_Vasp, Run_Sumo, Run_Wannier
+from pyGWBSE.out2db import gw2db, bse2db, emc2db, eps2db, Wannier2DB, rpa2db, wtb2db
+from pyGWBSE.parse_outputs import BSEToDb
+from pyGWBSE.run_calc import Run_Vasp, Run_Sumo, Run_Wannier, Run_WTB, Run_PreWTB
 from pyGWBSE.tasks import CopyOutputFiles, CheckBeConv, StopIfConverged, PasscalClocsCond, WriteBSEInput, \
                             WriteGWInput, MakeWFilesList, SaveNbandsov, SaveConvParams, WriteWTBInput
 from pyGWBSE.wannier_tasks import WriteWannierInputForDFT, WriteWannierInputForGW, CopyKptsWan2vasp
@@ -36,8 +38,9 @@ class ScfFW(Firework):
                                     vasp_input_set=vasp_input_set,
                                     vasp_input_params=vasp_input_params))
         t.append(Run_Vasp(vasp_cmd=vasp_cmd))
-        t.append(eps2db(structure=structure, mat_name=mat_name, db_file=db_file, defuse_unsuccessful=False))
-        t.append(rpa2db(structure=structure, mat_name=mat_name, task_label=name, db_file=db_file, defuse_unsuccessful=False))
+        #t.append(eps2db(structure=structure, mat_name=mat_name, db_file=db_file, defuse_unsuccessful=False))
+        #t.append(rpa2db(structure=structure, mat_name=mat_name, task_label=name, db_file=db_file, defuse_unsuccessful=False))
+        t.append(VaspToDb(db_file=db_file, additional_fields={"task_label": name, "mat_name": mat_name}))
         t.append(PassCalcLocs(name=name))
         super(ScfFW, self).__init__(t, name=fw_name, **kwargs)
 
@@ -102,7 +105,8 @@ class convFW(Firework):
             t.append(CheckBeConv(niter=niter, tolerence=tolerence, no_conv=no_conv))
             t.append(PasscalClocsCond(name=name))
             if no_conv==False:
-                t.append(gw2db(structure=structure, mat_name=mat_name, task_label=task_label, db_file=db_file, defuse_unsuccessful=False))
+                #t.append(gw2db(structure=structure, mat_name=mat_name, task_label=task_label, db_file=db_file, defuse_unsuccessful=False))
+                t.append(VaspToDb(db_file=db_file, additional_fields={"task_label": name, "mat_name": mat_name}))
             t.append(StopIfConverged())
         tracker = Tracker('vasp.log', nlines=100)
         super(convFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker]}, **kwargs)
@@ -135,9 +139,10 @@ class GwFW(Firework):
             t.append(CheckBeConv(niter=niter, tolerence=tolerence, no_conv=no_conv))
             t.append(PasscalClocsCond(name=name))
             t.append(MakeWFilesList())
-            t.append(
-                gw2db(structure=structure, mat_name=mat_name, task_label=task_label, job_tag=job_tag, db_file=db_file,
-                      defuse_unsuccessful=False))
+            #t.append(
+            #    gw2db(structure=structure, mat_name=mat_name, task_label=task_label, job_tag=job_tag, db_file=db_file,
+            #          defuse_unsuccessful=False))
+            t.append(VaspToDb(db_file=db_file, additional_fields={"task_label": name, "mat_name": mat_name, "job_tag": job_tag}))
             t.append(StopIfConverged())
         tracker = Tracker('vasp.log', nlines=100)
 
@@ -164,11 +169,13 @@ class BseFW(Firework):
         t.append(SaveNbandsov(enwinbse=enwinbse))
         t.append(WriteBSEInput(structure=structure, reciprocal_density=reciprocal_density))
         t.append(Run_Vasp(vasp_cmd=vasp_cmd))
-        t.append(bse2db(structure=structure, mat_name=mat_name, task_label=name, job_tag=job_tag, db_file=db_file,
-                        defuse_unsuccessful=False))
+        #t.append(bse2db(structure=structure, mat_name=mat_name, task_label=name, job_tag=job_tag, db_file=db_file,
+        #                defuse_unsuccessful=False))
+        print(prev_calc_loc)
+        t.append(BSEToDb(db_file=db_file, gwcalc_dir=prev_calc_loc, additional_fields={"task_label": name, "mat_name": mat_name, "job_tag": job_tag}))
         tracker = Tracker('vasp.log', nlines=100)
 
-        super(BseFW, self).__init__(t, parents=parents, name=fw_name, state='PAUSED', spec={"_trackers": [tracker]},
+        super(BseFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker], "_category": "nokpar"},
                                     **kwargs)
 
 
@@ -226,8 +233,8 @@ class WannierCheckFW(Firework):
         t.append(Wannier2DB(structure=structure, mat_name=mat_name, task_label='CHECK_WANNIER_INTERPOLATION',
                             db_file=db_file, compare_vasp=True, defuse_unsuccessful=False))
         tracker = Tracker('vasp.log', nlines=100)
-
-        super(WannierCheckFW, self).__init__(t, parents=parents, name=fw_name, state='PAUSED', spec={"_trackers": [tracker]}, **kwargs)
+        t.append(PassCalcLocs(name=name))
+        super(WannierCheckFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker], "_category": "nokpar"}, **kwargs)
 
 
 class WannierFW(Firework):
@@ -249,7 +256,7 @@ class WannierFW(Firework):
         super(WannierFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker]}, **kwargs)
 
 class WtbFW(Firework):
-    def __init__(self, structure=None, mat_name=None, wtb_cmd=None, prev_calc_loc=True, prev_calc_dir=None,
+    def __init__(self, structure=None, mat_name=None, enwinbse=None, wtb_cmd=None, prev_calc_loc=True, prev_calc_dir=None,
                  db_file=None, parents=None, **kwargs):
         """
         Your Comments Here
@@ -261,8 +268,7 @@ class WtbFW(Firework):
         t.append(CopyOutputFiles(additional_files=files2copy, calc_loc=prev_calc_loc))
         t.append(WriteWTBInput(enwinbse=enwinbse))
         t.append(Run_WTB(wtb_cmd=wtb_cmd))
-        #t.append(Wannier2DB(structure=structure, mat_name=mat_name, task_label='GW_BANDSTRUCTURE', db_file=db_file,
-        #                    compare_vasp=False, defuse_unsuccessful=False))
+        t.append(wtb2db(structure=structure, mat_name=mat_name, task_label='Wannier BSE', db_file=db_file, defuse_unsuccessful=False))
         tracker = Tracker('wannier90.wout', nlines=100)
 
-        super(WtbFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker]}, **kwargs)
+        super(WtbFW, self).__init__(t, parents=parents, name=fw_name, spec={"_trackers": [tracker], "_category": "openmp"}, **kwargs)

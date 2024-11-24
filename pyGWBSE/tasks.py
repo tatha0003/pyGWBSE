@@ -4,6 +4,7 @@ import glob
 import gzip
 import os
 import re
+from monty.serialization import loadfn
 from atomate.common.firetasks.glue_tasks import CopyFiles, get_calc_loc
 from atomate.utils.utils import env_chk, get_logger
 from fireworks import explicit_serialize, FiretaskBase, FWAction
@@ -177,6 +178,20 @@ class WriteGWInput(FiretaskBase):
                            encutgw=encutgw, nomegagw=nomegagw, nbands=nbands, nbandsgw=nbandsgw, wannier_fw=wannier_fw)
         vis.write_input(".")
 
+def read_wtbout(fname):                                                       
+    f = open(fname)                                                             
+    contents = f.readlines()                                                    
+    f.close()       
+    en=[]
+    eps1=[]
+    eps2=[]
+    for content in contents:                                                    
+        if "#" not in content:           
+            lines=str.split(content)
+            en.append(eval(lines[0]))
+            eps1.append(eval(lines[1]))
+            eps2.append(eval(lines[2]))
+    return en, eps1, eps2
 
 def read_emcpyout(fname):                                                       
     f = open(fname)                                                             
@@ -454,7 +469,7 @@ class WriteWTBInput(FiretaskBase):
         self.CONFIG["NBANDSC"]=nc
         self.CONFIG["NBANDSV"]=nv
         self.CONFIG["ENSPECI"]=round((dgap-1.0),4)
-        self.CONFIG["ENSPECF"]=round((dgap+enwinbse),4)
+        self.CONFIG["ENSPECF"]=round((dgap+enwinbse+5),4)
         self.write_wtbinput()
 
     def write_wtbinput(self):

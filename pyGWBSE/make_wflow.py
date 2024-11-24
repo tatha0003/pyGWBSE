@@ -113,11 +113,14 @@ def create_wfs(struct, params_dict, vasp_cmd=None, sumo_cmd=None, wannier_cmd=No
         fws.append(fw)
 
     if skip_wannier==False:
-        ifw=ifw+2 
+        ifw=ifw+1 
         parents = fws[0]
         fw = WannierCheckFW(structure=struct, mat_name=mat_name, kpar=kpar, ppn=ppn,vasp_cmd=vasp_cmd,wannier_cmd=wannier_cmd, prewtb_cmd=prewtb_cmd,db_file=db_file,parents=parents,reciprocal_density=rd)
         fws.append(fw)
-        fw = WtbFW(structure=struct,mat_name=mat_name, wtb_cmd=wtb_cmd,db_file=db_file,parents=parents)
+
+        ifw=ifw+1 
+        parents = fws[ifw-1]
+        fw = WtbFW(structure=struct,mat_name=mat_name, enwinbse=enwinbse, wtb_cmd=wtb_cmd,db_file=db_file,parents=parents)
         fws.append(fw)
 
 
